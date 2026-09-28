@@ -6,9 +6,9 @@ export default function ProductCard({ product, onAddToCart }) {
   if (product.stock < 1) {
     stockLabel = 'Out of stock';
   } else if (product.stock <= 8) {
-    stockLabel = 'Only $(product.stock) left';
+    stockLabel = `Only ${product.stock} left`; 
   } else {
-    stockLabel = '$(product.stock) in stock';
+    stockLabel = `${product.stock} in stock`; 
   }
 
   return (
