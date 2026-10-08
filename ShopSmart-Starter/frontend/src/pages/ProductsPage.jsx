@@ -8,6 +8,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
+  const [sortOption, setSortOption] = useState('default');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { addToCart, cartMessage } = useCart();
@@ -28,13 +29,25 @@ export default function ProductsPage() {
 
   const query = search.trim().toLowerCase();
 
-  const visibleProducts = products.filter((product) => {
-    const matchesSearch = 
-      product.name.toLowerCase().includes(query) ||
-      product.description.toLowerCase().includes(query)
-    const matchesCategory = category === 'All' || product.category === category;
-    return matchesSearch && matchesCategory;
-  });
+  const visibleProducts = useMemo(() => {
+    const filtered = products.filter((product) => {
+      const matchesSearch = 
+        product.name.toLowerCase().includes(query) ||
+        product.description.toLowerCase().includes(query);
+      const matchesCategory = category === 'All' || product.category === category;
+      return matchesSearch && matchesCategory;
+    });
+
+    return [...filtered].sort((a, b) => {
+      const priceA = Number(a.price);
+      const priceB = Number(b.price);
+
+      if (sortOption === 'price-low-high') return priceA - priceB;
+      if (sortOption === 'price-high-low') return priceB - priceA;
+      if (sortOption === 'name-a-z') return a.name.localeCompare(b.name);
+      return 0;
+    });
+  }, [products, query, category, sortOption]);
 
   return (
     <section>
@@ -55,6 +68,15 @@ export default function ProductsPage() {
           <span>Category</span>
           <select value={category} onChange={(event) => setCategory(event.target.value)}>
             {categories.map((item) => <option key={item}>{item}</option>)}
+          </select>
+        </label>
+        <label>
+          <span>Sort by</span>
+          <select value={sortOption} onChange={(event) => setSortOption(event.target.value)}>
+            <option value="default">Default</option>
+            <option value="price-low-high">Price: Low to High</option>
+            <option value="price-high-low">Price: High to Low</option>
+            <option value="name-a-z">Name: A to Z</option>
           </select>
         </label>
       </div>

@@ -55,7 +55,22 @@ export default function CheckoutPage() {
         <label>Delivery address<textarea name="address" value={form.address} onChange={updateField} minLength="10" maxLength="300" required /></label>
         <button disabled={submitting}>{submitting ? 'Submitting order…' : 'Place simulated order'}</button>
       </form>
-      <aside className="summary"><h2>Amount due</h2><p className="summary-total"><span>Total</span><strong>₱{total.toLocaleString('en-PH')}</strong></p><small>No actual payment will be collected.</small></aside>
+      <aside className="summary">
+        <h2>Order summary</h2>
+        <div className="checkout-items" style={{ marginBottom: '1rem' }}>
+          {cart.map((item) => (
+            <div key={item.productId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+              <div>
+                <strong>{item.name}</strong>
+                <div>Qty: {item.quantity} × ₱{item.price.toLocaleString('en-PH')}</div>
+              </div>
+              <div>₱{(item.price * item.quantity).toLocaleString('en-PH')}</div>
+            </div>
+          ))}
+        </div>
+        <p className="summary-total"><span>Total</span><strong>₱{total.toLocaleString('en-PH')}</strong></p>
+        <small>No actual payment will be collected.</small>
+      </aside>
     </section>
   );
 }
