@@ -6,6 +6,7 @@ import { api } from '../services/api.js';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState(['All']);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [sortOption, setSortOption] = useState('default');
@@ -15,27 +16,47 @@ export default function ProductsPage() {
 
   useEffect(() => {
     let active = true;
-    api.getProducts()
-      .then((data) => active && setProducts(data.products))
-      .catch((caught) => active && setError(caught.message))
-      .finally(() => active && setLoading(false));
+    api.getProducts('')
+      .then((data) => {
+        if (active && data.products) {
+          const uniqueCategories = ['All', ...new Set(data.products.map((p) => p.category))];
+          setCategories(uniqueCategories);
+        }
+      })
+      .catch(() => {});
+
     return () => { active = false; };
   }, []);
 
-  const categories = useMemo(
-    () => ['All', ...new Set(products.map((product) => product.category))],
-    [products]
-  );
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
 
-  const query = search.trim().toLowerCase();
+    api.getProducts(search.trim())
+      .then((data) => {
+        if (active && data.products) {
+          setProducts(data.products);
+        }
+      })
+      .catch((caught) => {
+        if (active) {
+          setError(caught.message);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => { active = false; };
+  }, [search]);
 
   const visibleProducts = useMemo(() => {
     const filtered = products.filter((product) => {
-      const matchesSearch = 
-        product.name.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query);
       const matchesCategory = category === 'All' || product.category === category;
-      return matchesSearch && matchesCategory;
+      return matchesCategory;
     });
 
     return [...filtered].sort((a, b) => {
@@ -47,7 +68,7 @@ export default function ProductsPage() {
       if (sortOption === 'name-a-z') return a.name.localeCompare(b.name);
       return 0;
     });
-  }, [products, query, category, sortOption]);
+  }, [products, category, sortOption]);
 
   return (
     <section>
@@ -62,7 +83,11 @@ export default function ProductsPage() {
       <div className="toolbar">
         <label>
           <span>Search products</span>
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Try keyboard" />
+          <input 
+            value={search} 
+            onChange={(event) => setSearch(event.target.value)} 
+            placeholder="Try keyboard" 
+          />
         </label>
         <label>
           <span>Category</span>

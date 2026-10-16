@@ -5,10 +5,23 @@ const router = Router();
 router.get('/', async (request, response, next) => {
   try {
     const search = String(request.query.search || '').trim();
+    const where = {
+      active: true,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } }
+            ]
+          }
+        : {})
+    };
+
     const products = await prisma.product.findMany({
-      where: { active: true, ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}) },
+      where,
       orderBy: { id: 'asc' }
     });
+
     response.json({ products: products.map((p) => ({ ...p, price: Number(p.price) })) });
   } catch (error) { next(error); }
 });
