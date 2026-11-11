@@ -11,7 +11,18 @@ const products = [
   { name: 'USB Headset', description: 'Over-ear headset with noise-reducing boom microphone.', category: 'Audio', emoji: '🎧', price: 1350, stock: 7 }
 ];
 
+// Deleting orders must be a deliberate choice, never a side effect of "fixing" missing products.
+const resetRequested = process.argv.includes('--reset') || process.env.SEED_RESET === 'true';
+
 async function main() {
+  const orderCount = await prisma.order.count();
+  if (orderCount > 0 && !resetRequested) {
+    console.error(`Seed stopped: the database already holds ${orderCount} order(s), and seeding would delete them.`);
+    console.error('Nothing was changed. To wipe orders and restore the sample products on purpose, run: npm run db:reset-sample-data');
+    process.exitCode = 1;
+    return;
+  }
+
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.product.deleteMany();

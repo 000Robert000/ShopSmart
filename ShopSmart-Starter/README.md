@@ -138,6 +138,8 @@ NODE_ENV=development
 
 If the class uses a different database password or port, update only the matching part of `DATABASE_URL`.
 
+The AI assistant works without any key by using built-in catalog rules. If your team has an approved Gemini key, set `GEMINI_API_KEY` in `backend/.env` only. Never put a key in `frontend/.env` or any `VITE_` variable, because those values are copied into the public browser bundle.
+
 Never upload `.env` files or paste their contents into a public repository or AI service.
 
 ### 4. Install all project dependencies
@@ -192,7 +194,7 @@ The terminal should display:
 Seeded 6 ShopSmart products.
 ```
 
-Running this command again deletes existing classroom orders and restores the six sample products. Do not reseed a database containing work you need to keep.
+If the database already contains orders, `npm run db:seed` stops without changing anything so orders are not lost by accident. To deliberately wipe all orders and restore the six sample products, run `npm run db:reset-sample-data`. Never run that against a database containing work you need to keep.
 
 ### 8. Run the automated checks
 
@@ -304,7 +306,11 @@ Stop the previous ShopSmart process with `Ctrl+C`. Do not change ports unless th
 
 ### Products do not appear
 
-Verify http://localhost:3000/api/health, then run `npm run db:seed` and restart `npm run dev`.
+Verify http://localhost:3000/api/health and http://localhost:3000/api/products. If the product list is empty, run `npm run db:seed` (it refuses to run if orders exist) and restart `npm run dev`.
+
+### The assistant says it cannot reach the catalog
+
+The API answers `503 ASSISTANT_UNAVAILABLE` when PostgreSQL is unreachable. Start PostgreSQL and check `DATABASE_URL`. If only the AI provider is down, the assistant still answers from catalog rules and shows a notice.
 
 ### The browser reports a CORS error
 
@@ -319,7 +325,9 @@ Confirm that the front end uses http://localhost:5173 and that `FRONTEND_URL=htt
 | `npm run check` | Lint, test and build |
 | `npm run db:generate` | Generate Prisma Client |
 | `npm run db:migrate` | Create or update database tables |
-| `npm run db:seed` | Reset and insert sample data |
+| `npm run db:seed` | Insert sample products (stops if orders exist) |
+| `npm run db:reset-sample-data` | Deliberately delete all orders and restore sample products |
+| `npm run db:deploy` | Apply committed migrations on staging or production (`prisma migrate deploy`) |
 | `npm run db:studio` | Open the Prisma database viewer |
 
-Read `docs/TEACHING_ROADMAP.md` for the weekly improvement plan.
+Read `docs/TEACHING_ROADMAP.md` for the weekly improvement plan and `docs/DEPLOYMENT.md` for the staging deployment plan.

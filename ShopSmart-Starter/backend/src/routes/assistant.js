@@ -1,23 +1,22 @@
-import express from 'express';
+import { Router } from 'express';
 import { getAssistantAnswer } from '../services/assistant.js';
+import { assistantQuestionSchema } from '../validators/schemas.js';
 
-const router = express.Router();
+const router = Router();
 
-router.post('/questions', async (req, res) => {
+router.post('/questions', async (request, response, next) => {
   try {
-    const { question } = req.body;
-
-    if (!question || typeof question !== 'string' || !question.trim()) {
-      return res.status(400).json({ error: 'Question is required' });
+    const parsed = assistantQuestionSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return response.status(422).json({
+        error: { code: 'INVALID_QUESTION', message: 'Enter a question between 3 and 300 characters.' }
+      });
     }
 
-    const result = await getAssistantAnswer(question);
-    return res.json(result);
+    response.json(await getAssistantAnswer(parsed.data.question));
   } catch (error) {
-    console.error('API Error:', error);
-    return res.status(500).json({
-      error: `Server Error: ${error.message || 'Unknown error'}`
-    });
+    // AssistantUnavailableError carries status 503 and a safe message; anything else becomes a generic 500.
+    next(error);
   }
 });
 

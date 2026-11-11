@@ -54,6 +54,9 @@ export default function AssistantPage() {
         {!result && !error && <p>Your answer will appear here.</p>}
         {result && (
           <>
+            {result.mode === 'fallback' && (
+              <StatusMessage>The AI service is unavailable right now, so these results come from a direct catalog search.</StatusMessage>
+            )}
             <p>{result.answer}</p>
             {Array.isArray(productList) && productList.length > 0 && (
               <div className="recommendations">
