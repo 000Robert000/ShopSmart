@@ -327,7 +327,18 @@ Confirm that the front end uses http://localhost:5173 and that `FRONTEND_URL=htt
 | `npm run db:migrate` | Create or update database tables |
 | `npm run db:seed` | Insert sample products (stops if orders exist) |
 | `npm run db:reset-sample-data` | Deliberately delete all orders and restore sample products |
-| `npm run db:deploy` | Apply committed migrations on staging or production (`prisma migrate deploy`) |
+| `npm run db:deploy` | Apply committed migrations without resetting data (`prisma migrate deploy`) |
 | `npm run db:studio` | Open the Prisma database viewer |
 
-Read `docs/TEACHING_ROADMAP.md` for the weekly improvement plan and `docs/DEPLOYMENT.md` for the staging deployment plan.
+Read `docs/TEACHING_ROADMAP.md` for the weekly improvement plan and `docs/DEPLOYMENT.md` for the AWS (single EC2) deployment plan and runbook. The server setup files are in `deploy/`.
+
+## Customer accounts
+
+Checkout requires a signed-in customer. Create a fictional account on the **Sign in** page (use an example.com email and a password you do not use anywhere else). Each customer sees only their own orders on **My account**; the API refuses guests (401) and other customers (403).
+
+After pulling this version, apply the new migration before starting the app:
+
+```bash
+npm run db:deploy
+npm run db:generate
+```

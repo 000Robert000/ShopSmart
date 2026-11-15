@@ -55,8 +55,13 @@ export default function AssistantPage() {
         {result && (
           <>
             {result.mode === 'fallback' && (
-              <StatusMessage>The AI service is unavailable right now, so these results come from a direct catalog search.</StatusMessage>
+              <StatusMessage>
+                {result.fallbackReason === 'invalid_response'
+                  ? 'The AI answer could not be verified against our catalog, so these results come from a direct catalog search.'
+                  : 'The AI service is unavailable right now, so these results come from a direct catalog search.'}
+              </StatusMessage>
             )}
+            {result.mode === 'mock' && <StatusMessage>Simulated AI provider (mock) for this demo. No live AI service was called.</StatusMessage>}
             <p>{result.answer}</p>
             {Array.isArray(productList) && productList.length > 0 && (
               <div className="recommendations">

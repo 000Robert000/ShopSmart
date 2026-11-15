@@ -29,7 +29,31 @@ model Order {
   status       String      @default("PENDING")
   total        Decimal     @db.Decimal(10, 2)
   createdAt    DateTime    @default(now())
+  customerId   Int?
+  customer     Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items        OrderItem[]
+
+  @@index([customerId])
+}
+
+model Customer {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  orders       Order[]
+  sessions     Session[]
+}
+
+model Session {
+  id         String   @id
+  customerId Int
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
 }
 
 model OrderItem {

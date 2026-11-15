@@ -1,8 +1,32 @@
 import { Router } from 'express';
 import { Prisma } from '@prisma/client';
+import { canReadOrder } from '../lib/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { requireCustomer } from '../middleware/session.js';
 import { orderSchema } from '../validators/schemas.js';
 const router = Router();
+
+// Every order route needs a signed-in customer. Hiding a button in the UI is not enough.
+router.use(requireCustomer);
+
+function toOrderJson(order) {
+  return {
+    id: order.id,
+    customerName: order.customerName,
+    email: order.email,
+    address: order.address,
+    status: order.status,
+    total: Number(order.total),
+    createdAt: order.createdAt,
+    items: (order.items || []).map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      productName: item.product?.name,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice)
+    }))
+  };
+}
 
 router.post('/', async (request, response, next) => {
   try {
@@ -29,15 +53,43 @@ router.post('/', async (request, response, next) => {
       }
       return transaction.order.create({
         data: {
-          customerName: parsed.data.customerName, email: parsed.data.email, address: parsed.data.address, total,
+          customerId: request.customer.id,
+          customerName: parsed.data.customerName,
+          email: request.customer.email,
+          address: parsed.data.address,
+          total,
           items: { create: normalizedItems.map((item) => ({ productId: item.productId, quantity: item.quantity, unitPrice: item.product.price })) }
         },
-        include: { items: true }
+        include: { items: { include: { product: true } } }
       });
     });
-    response.status(201).json({ ...order, total: Number(order.total), items: order.items.map((item) => ({ ...item, unitPrice: Number(item.unitPrice) })) });
+    response.status(201).json(toOrderJson(order));
   } catch (error) { next(error); }
 });
 
-// WEEK 4 IMPROVEMENT: Associate orders with authenticated users and add a protected GET route.
+// The signed-in customer's own orders only.
+router.get('/', async (request, response, next) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: { customerId: request.customer.id },
+      orderBy: { id: 'desc' },
+      include: { items: { include: { product: true } } }
+    });
+    response.json({ orders: orders.map(toOrderJson) });
+  } catch (error) { next(error); }
+});
+
+router.get('/:id', async (request, response, next) => {
+  try {
+    const id = Number(request.params.id);
+    if (!Number.isInteger(id) || id < 1) return response.status(400).json({ error: { code: 'INVALID_ORDER_ID', message: 'Order ID must be a positive integer.' } });
+    const order = await prisma.order.findUnique({ where: { id }, include: { items: { include: { product: true } } } });
+    if (!order) return response.status(404).json({ error: { code: 'ORDER_NOT_FOUND', message: 'Order could not be found.' } });
+    if (!canReadOrder(request.customer, order)) {
+      return response.status(403).json({ error: { code: 'ORDER_FORBIDDEN', message: 'You can only view your own orders.' } });
+    }
+    response.json(toOrderJson(order));
+  } catch (error) { next(error); }
+});
+
 export default router;

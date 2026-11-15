@@ -1,0 +1,30 @@
+# ShopSmart on a single EC2 host. Caddy gets and renews the HTTPS certificate automatically.
+# Only ports 80 and 443 are public; Express (3000) and PostgreSQL (5432) listen on localhost only.
+__DOMAIN__ {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	# Built React app. Unknown paths fall back to index.html so a refresh on /cart or /account works.
+	handle {
+		root * /var/www/shopsmart
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Caddy blanks Cookie and Authorization header values in logs by default.
+	log {
+		output file /var/log/caddy/shopsmart-access.log
+		format json
+	}
+}

@@ -15,6 +15,8 @@ export async function request(path, options = {}, { timeoutMs = REQUEST_TIMEOUT_
   try {
     response = await fetchImpl(`${API_URL}${path}`, {
       ...options,
+      // Sends and receives the httpOnly session cookie (also across :5173 -> :3000 in development).
+      credentials: 'include',
       signal: controller.signal,
       headers: { 'Content-Type': 'application/json', ...options.headers }
     });
@@ -31,6 +33,7 @@ export async function request(path, options = {}, { timeoutMs = REQUEST_TIMEOUT_
   }
 
   const data = await response.json().catch(() => null);
+  if (response.status === 204) return null;
   if (!response.ok) {
     const error = new Error(getErrorMessage(data, response.status));
     error.status = response.status;
@@ -44,6 +47,12 @@ export const api = {
   getProducts: (query = '') => request(`/products${query ? `?search=${encodeURIComponent(query)}` : ''}`),
   getProduct: (id) => request(`/products/${id}`),
   createOrder: (order) => request('/orders', { method: 'POST', body: JSON.stringify(order) }),
+  register: (account) => request('/auth/register', { method: 'POST', body: JSON.stringify(account) }),
+  login: (credentials) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  me: () => request('/auth/me'),
+  getMyOrders: () => request('/orders'),
+  getOrder: (id) => request(`/orders/${id}`),
   askAssistant: (question) => request('/assistant/questions', {
     method: 'POST', body: JSON.stringify({ question })
   }, { timeoutMs: ASSISTANT_TIMEOUT_MS })
