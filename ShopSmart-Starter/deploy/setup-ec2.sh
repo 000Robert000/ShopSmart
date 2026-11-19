@@ -100,6 +100,8 @@ echo "== 7/8 Caddy: HTTPS for $DOMAIN, /api -> 127.0.0.1:3000, everything else -
 sed "s/__DOMAIN__/${DOMAIN}/" "$STARTER/deploy/Caddyfile" > /etc/caddy/Caddyfile
 install -d -o caddy -g caddy /var/log/caddy
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+# validate runs as root and can create the access log as root; give it back to Caddy or the service fails to start.
+chown -R caddy:caddy /var/log/caddy
 systemctl enable caddy >/dev/null
 systemctl reload caddy || systemctl restart caddy
 
